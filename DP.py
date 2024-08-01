@@ -1,59 +1,55 @@
+from bisect import bisect_left, bisect_right
 MOD = 10 ** 9 + 7
 
 # To make sure your result is correct, use the addMod, subMod, and mulMod functions to add, subtract, and multiply numbers to compute your answer
 def addMod(a, b):
-    c = (a + b) % MOD 
-    if c < 0:
-        c += MOD 
-    return c
+    return (a + b) % MOD
 
 def subMod(a, b):
-    c = (a - b) % MOD 
-    if c < 0:
-        c += MOD 
-    return c
+    return (a - b) % MOD
 
 def mulMod(a, b):
-    c = (a * b) % MOD 
-    if c < 0:
-        c += MOD 
-    return c
+    return (a * b) % MOD
 
-
-def valid_coverage(cities, towers, i, k, d):
-    if k == -1: # k is -1 when initializing base cases DP[i][1]
-        if cities[0] >= towers[i-1] - d:
-            return True
-        else:
-            return False
+def valid_coverage(A, B, i, k, d):
+    if k == -1:
+        #return B[i] - d <= A[0] and B[i] + d >= A[bisect_right(A, B[i]) - 1]
+        return B[i] - d <= A[0]
     else:
-        for city in cities: # check to see if a city is overlapped by tower i and tower k (tower k is the tower prior to i)
-            if abs(city - towers[i-1]) <= d and abs(city - towers[k-1]) <= d:
+        st = bisect_left(A, B[k] + d + 1)
+        en = bisect_right(A, B[i] - d - 1)
+        
+        if en - st > 0:
+            return False
+        
+        for city in A:
+            if abs(city - B[i]) <= d and abs(city - B[k]) <= d:
                 return False
-        return True    
-
+        
+        return True
+    
 def computeWays(cities, towers, d):
     n, m = len(cities), len(towers)
-    DP = [[0] * (m + 1) for _ in range(m + 1)] # Initialize DP array
 
-    for i in range(1, m):
-        if valid_coverage(cities, towers, i, -1, d):
-            if i == 1:
-                DP[i][1] = 1
-            else:
-                DP[i][1] = addMod(DP[i][1], DP[i-1][1])
-    
-    # Build up DP Matrix 
-    for i in range(2, m + 1):
-        for j in range(2, m + 1):
-            for k in range(1, i):
-                if valid_coverage(cities, towers, i, k, d):
-                    DP[i][j] = addMod(DP[i][j], DP[k][j-1]) 
+    DP = [[0] * (m + 1) for _ in range(m + 1)]
 
-    # Extract the result from DP array
+    # initialize base case D[i][1]
+    for i in range(1, m + 1):
+        if valid_coverage(cities, towers, i-1, -1, d):
+            DP[i][1] = 1
+
+    for i in range(1, m + 1):
+        for j in range(2, i + 1):
+            for k in range(i):
+                if valid_coverage(cities, towers, i-1, k-1, d):
+                    DP[i][j] = addMod(DP[i][j], DP[k][j-1])
+
     result = [0] * m
-    for k in range(1, m + 1):
-        result[k-1] = DP[m][k]
+    for j in range(1, m + 1):
+        for i in range(1, m + 1):
+            if towers[i-1] + d >= cities[-1]:  # Check if B[i] covers the rightmost city
+                result[j-1] = addMod(result[j-1], DP[i][j])
+
     return result
 
 # The following lines take care of input and output for you. You may ignore this section.
